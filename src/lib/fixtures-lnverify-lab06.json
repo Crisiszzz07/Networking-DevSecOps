@@ -1,0 +1,28 @@
+{
+  "lab": "lab-06-policy-as-code",
+  "pass": true,
+  "pass_token": "PASS-lab-06",
+  "checks": [
+    {
+      "index": 0,
+      "command": "test \"$(wc -l \u003c\"$f\")\" -eq 3",
+      "status": "pass"
+    },
+    {
+      "index": 1,
+      "command": "awk -F '\\t' 'NR\u003e1 \u0026\u0026 $1==\"edge\" \u0026\u0026 $2==\"database\" {found=1} END {exit found}' \"$f\"",
+      "status": "pass"
+    },
+    {
+      "index": 2,
+      "command": "awk -F '\\t' 'NR\u003e1 \u0026\u0026 $5==\"\" {exit 1}' \"$f\"",
+      "status": "pass"
+    },
+    {
+      "index": 3,
+      "command": "grep -qx $'api\\tdatabase\\ttcp\\t5432\\tspiffe://learn/ns/prod/sa/api' \"$f\"",
+      "status": "pass"
+    }
+  ],
+  "ran_at": "2026-09-24T04:01:23Z"
+}

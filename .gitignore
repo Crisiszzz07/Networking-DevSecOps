@@ -1,0 +1,8 @@
+node_modules/
+.next/
+out/
+bin/
+next-env.d.ts
+*.tsbuildinfo
+.lab-0*/
+EPUBS/

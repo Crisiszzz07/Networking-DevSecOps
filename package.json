@@ -1,0 +1,40 @@
+{
+  "name": "learning-network",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.26.1",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "pnpm dlx serve out",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "content:check": "vitest run src/lib/content.test.ts",
+    "verifier:build": "cd tools/verifier && go build -o ../../bin/lnverify ."
+  },
+  "dependencies": {
+    "js-yaml": "^5.4.2",
+    "lucide-react": "^1.47.0",
+    "mdast-util-to-string": "^4.0.0",
+    "next": "^16.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/mdast": "^4.0.4",
+    "@types/node": "^22.20.4",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~5.9.3",
+    "vitest": "^5.0.1"
+  }
+}
