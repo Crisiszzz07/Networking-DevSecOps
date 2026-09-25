@@ -1,0 +1,10 @@
+# Material de estudio y artefactos locales: no son necesarios para construir el sitio.
+EPUBS/
+bin/
+out/
+.agents/
+.claude/
+.codex/
+.hallmark/
+*.tsbuildinfo
+.lab-0*/
