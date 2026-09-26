@@ -1,3 +1,4 @@
+import { isValidElement, type ReactNode } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { buildCitationIndex } from "@/components/hallmark/Cite";
@@ -7,6 +8,7 @@ import { makeEnricher } from "./enrich";
 import { GlossaryChips } from "./GlossaryTerm";
 import { InteractiveTable } from "./InteractiveTable";
 import { DecisionCheckpoint } from "./DecisionCheckpoint";
+import { MechanismDiagram } from "./MechanismDiagram";
 import type { DecisionCheckpointSpec } from "@/lib/checkpoints";
 
 function anchorFor(title: string) {
@@ -24,6 +26,13 @@ function sectionsIn(markdown: string) {
     const title = match[1]!.trim();
     return { title, id: anchorFor(title) };
   });
+}
+
+function sourceFrom(children: ReactNode): string {
+  if (typeof children === "string" || typeof children === "number") return String(children);
+  if (Array.isArray(children)) return children.map(sourceFrom).join("");
+  if (isValidElement<{ children?: ReactNode }>(children)) return sourceFrom(children.props.children);
+  return "";
 }
 
 export function TheoryPanel({
@@ -82,12 +91,7 @@ export function TheoryPanel({
               li: ({ children }) => <li>{enrich(children)}</li>,
               table: ({ children }) => <InteractiveTable>{children}</InteractiveTable>,
               td: ({ children }) => <td>{enrich(children)}</td>,
-              pre: ({ children }) => (
-                <figure className="theory-figure">
-                  <figcaption>Lectura visual del mecanismo</figcaption>
-                  <pre>{children}</pre>
-                </figure>
-              ),
+              pre: ({ children }) => <MechanismDiagram source={sourceFrom(children)} />,
             }}
           >
             {markdown}
