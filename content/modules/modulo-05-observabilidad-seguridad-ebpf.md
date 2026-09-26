@@ -14,6 +14,41 @@ lab_runtime: "Linux BTF/bpftool; CAP_BPF/CAP_PERFMON o root"
 
 > Trazabilidad: Learning eBPF (LeBPF), caps. 3–4, 6–9.
 
+## El problema: los logs de aplicación no ven todo lo que decide el kernel
+
+Hasta aquí has usado capturas, reglas y objetos de Kubernetes para entender un flujo. Pero un paquete puede descartarse antes de llegar a la pila normal, y un proceso puede abrir un socket sin que una captura aislada te diga qué cgroup o workload lo originó. eBPF existe para observar o controlar puntos muy concretos del kernel con una semántica explícita. [LeBPF, caps. 7–9]
+
+La pregunta no es “¿cómo escribo un programa eBPF?”. Primero es: **¿en qué momento del recorrido necesito evidencia o enforcement, y qué contexto todavía existe allí?** Un XDP temprano puede descartar rápido; un hook posterior puede relacionar el flujo con un Pod o proceso.
+
+## Mapa mínimo: el mismo paquete cambia de contexto al avanzar
+
+    NIC recibe bytes
+        │
+        ▼
+    XDP ── decisión muy temprana: DROP / PASS / REDIRECT
+        │ si pasa
+        ▼
+    stack y conntrack ── red normal del kernel
+        │
+        ▼
+    TC en veth ── interfaz, Pod y política de tránsito
+        │
+        ▼
+    socket/cgroup/LSM ── proceso, identidad u operación
+
+No memorices todos los tipos de programa. Aprende la consecuencia del punto de enganche: un paquete descartado por XDP no llegará a TC ni a un socket; un hook de socket da contexto de proceso que XDP no tiene. [LeBPF, caps. 7–8]
+
+## Ruta de estudio y conexión con el roadmap
+
+1. Comprende por qué el verifier acepta o rechaza un programa.
+2. Elige XDP, TC, socket, cgroup o LSM según la pregunta que quieres responder.
+3. Diseña eventos que unan paquete, PID, cgroup, netns y política.
+4. Inventaría programas, mapas y adjuntos antes de cambiar el datapath.
+
+El último módulo lleva esta misma disciplina a cloud: el control no es sólo un hook local, sino rutas, perímetros, identidad y política distribuidos entre VPC y workloads.
+
+## Referencia técnica: modelo de ejecución eBPF
+
 eBPF se carga vía bpf() como bytecode para VM de registros, helpers y mapas. Verifier valida control flow, contexto/memoria, punteros, límites y terminación antes de admitirlo. Mapas mantienen estado; pinning/enlaces gobiernan vida. BTF/CO-RE dan tipos/portabilidad, no capacidades iguales. [LeBPF, caps. 3–6]
 
 XDP corre RX pre-stack y retorna DROP, PASS, TX, REDIRECT o ABORTED: filtrado temprano. TC corre en interfaz ingress/egress. Socket filter ve socket; cgroup hooks y BPF LSM aportan contexto/previsión. [LeBPF, caps. 7–9]

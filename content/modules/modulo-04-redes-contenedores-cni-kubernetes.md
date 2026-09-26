@@ -14,6 +14,41 @@ lab_runtime: "kind/k3s, kubectl, CNI con NetworkPolicy"
 
 > Trazabilidad: Networking and Kubernetes (N&K), caps. 3–5.
 
+## El problema: “el Pod tiene IP” no explica por qué el flujo funciona
+
+En los módulos anteriores seguiste un paquete por Linux y validaste una identidad TLS. Kubernetes añade otra capa de abstracción: un Pod puede cambiar de IP, un Service puede tener una IP virtual sin endpoints sanos y una NetworkPolicy puede existir sin que el CNI la aplique. Cuando un frontend no llega a una API, “revisa la red de Kubernetes” no es un diagnóstico. [N&K, caps. 3–5]
+
+Aquí aprenderás a construir una explicación por planos: “el nombre resolvió el ClusterIP; kube-proxy eligió este endpoint; el CNI llevó el paquete al Pod remoto; la policy permitió o negó este puerto”. Esa secuencia conecta cada objeto de Kubernetes con una evidencia verificable.
+
+## Mapa mínimo: del Pod al Service y de vuelta al Pod
+
+    frontend Pod
+       │ IP de Pod + namespace de red
+       ▼
+    DNS / Service ── nombre → ClusterIP estable
+       │
+       ▼
+    kube-proxy ── DNAT hacia un endpoint real
+       │
+       ▼
+    CNI ── ruta directa u overlay VXLAN entre nodos
+       │
+       ▼
+    api Pod ── NetworkPolicy/CNI decide el flujo
+
+Un Service ayuda a descubrir y balancear; no cifra, no autentica y no abre una excepción de firewall. Una NetworkPolicy define intención, pero sólo es control efectivo cuando el CNI correspondiente la aplica. [N&K, caps. 4–5]
+
+## Ruta de estudio y conexión con el roadmap
+
+1. Distingue IP de Pod, ClusterIP y NodePort; cada una responde a una necesidad distinta.
+2. Sigue una conexión desde Service hasta EndpointSlice y Pod.
+3. Compara overlay VXLAN con routing directo para entender MTU y rutas.
+4. Empieza con default deny y abre DNS más el flujo de negocio mínimo.
+
+El módulo siguiente desciende otro nivel: si el datapath de Kubernetes no es suficiente para ver o controlar un comportamiento, eBPF permite observarlo y aplicar decisiones dentro del kernel.
+
+## Referencia técnica: modelo de red Kubernetes
+
 Cada Pod tiene IP alcanzable y sus contenedores comparten network namespace. CNI provisiona interfaz, IP, ruta e IPAM. VXLAN encapsula L3 del Pod sobre underlay y reduce MTU; direct routing instala rutas a Pod CIDR y exige underlay alcanzable. [N&K, caps. 3–4]
 
 ClusterIP es VIP estable; kube-proxy la redirige a Endpoints/EndpointSlices por iptables/IPVS. NodePort abre puerto por nodo. Service no es identidad, cifrado ni autorización. [N&K, caps. 4–5]

@@ -14,14 +14,38 @@ lab_runtime: "Linux, iproute2, tcpdump, nc; root"
 
 > Trazabilidad: Practical Packet Analysis (PPA), caps. 5, 6 y 9. La aplicación cloud-native es síntesis técnica.
 
-IPv4 mínimo tiene 20 bytes: Version=4, IHL en palabras de 32 bits para localizar L4, Total Length, Identification, flags DF/MF, Fragment Offset, TTL, Protocol y checksum de cabecera. TTL cero causa ICMP Time Exceeded; Protocol es TCP=6, UDP=17, ICMP=1. El checksum se recalcula cuando NAT o router modifica cabecera. [PPA, cap. 5]
+## Antes de mirar una cabecera: ¿qué incidente estás intentando explicar?
 
-Una ruta se elige por longest-prefix match; /p contiene 2^(32-p) direcciones. CIDR expresa alcance, no autorización. Campos origen/destino pueden ser falsificados dentro de una red permisiva; fragmentos pueden evadir controles que no reensamblen igual; ACL TCP deja UDP/ICMP sin política. [PPA, cap. 5]
+Una aplicación intenta abrir `api:8080` y expira. Ese síntoma no dice todavía si el servidor cayó, si el puerto está cerrado, si una ruta no existe, si un firewall descartó el tráfico o si la respuesta se perdió al volver. Este módulo te enseña a **separar esas hipótesis con evidencia**, no a memorizar números de protocolo. [PPA, caps. 6 y 9]
 
-TCP usa 4-tupla, SEQ y ACK. ACK es siguiente byte esperado; SYN y FIN consumen secuencia. Apertura: SYN(x), SYN-ACK(y,x+1), ACK(y+1); cliente CLOSED→SYN-SENT→ESTABLISHED, servidor LISTEN→SYN-RECEIVED→ESTABLISHED. FIN cierra una dirección; RST aborta estado. [PPA, cap. 6]
+Al terminar deberías poder defender una frase precisa como: “el cliente emitió SYN; el router lo reenvió; el servidor respondió RST” o “el SYN no llegó al servidor”. Es una conclusión mucho más útil que “la red está fallando”.
 
-Una política stateful autoriza SYN esperado y retorno ESTABLISHED,RELATED. Timeout sin SYN-ACK es compatible con DROP; RST demuestra stack alcanzable sin listener. Capture sobre veth/NIC, no sólo any: offload/NAT alteran evidencia. [PPA, cap. 9]
+## El mapa mínimo: una petición es varias decisiones encadenadas
 
+    proceso cliente
+          │ abre socket TCP hacia api:8080
+          ▼
+    TCP ── ¿hubo SYN, SYN-ACK, ACK o RST?
+          │ encapsula datos
+          ▼
+    IPv4 ── ¿qué destino, protocolo, TTL y tamaño lleva?
+          │ consulta ruta
+          ▼
+    router/firewall ── ¿por dónde sale y se permite?
+          │
+          ▼
+    servidor ── ¿hay listener y qué respuesta regresa?
+
+No necesitas estudiar todos los campos ahora. Empieza por cuatro preguntas: **qué host/puerto se intentó alcanzar, si TCP abrió sesión, por qué ruta viajó y en qué punto se capturó la evidencia**. TTL, fragmentación, offsets y checksum aparecen después porque explican por qué una captura o una ruta pueden engañarte. [PPA, caps. 5–6]
+
+## Ruta de estudio de este módulo
+
+1. Primero reconoce las firmas TCP de un timeout, un puerto cerrado y una sesión sana.
+2. Después usa IPv4 y CIDR para entender a dónde debía ir el paquete.
+3. Luego observa cómo TTL, MTU y fragmentación alteran el tránsito.
+4. Por último relaciona el PCAP con firewall stateful, NAT y el punto de captura.
+
+El módulo siguiente responderá una nueva pregunta: cuando ya sabes **qué** pasó con el paquete, ¿qué objetos del kernel Linux —namespace, veth, bridge, ruta y Netfilter— hicieron que ocurriera?
 
 ## Lectura de bytes: de hexadecimal a decisión de red
 
@@ -67,6 +91,16 @@ Un pod de pagos que permite 10.44.0.0/24 puede aceptar otra carga tras reprogram
 | TCP | ¿hubo sesión y quién cerró? | SEQ/ACK, flags, retransmisión |
 | firewall | ¿qué decisión se tomó? | regla y conntrack |
 | identidad | ¿qué servicio era? | SAN/SPIFFE y mTLS log |
+
+## Referencia técnica: campos y estados que sostienen el diagnóstico
+
+IPv4 mínimo tiene 20 bytes: Version=4, IHL en palabras de 32 bits para localizar L4, Total Length, Identification, flags DF/MF, Fragment Offset, TTL, Protocol y checksum de cabecera. TTL cero causa ICMP Time Exceeded; Protocol es TCP=6, UDP=17, ICMP=1. El checksum se recalcula cuando NAT o router modifica cabecera. [PPA, cap. 5]
+
+Una ruta se elige por longest-prefix match; /p contiene 2^(32-p) direcciones. CIDR expresa alcance, no autorización. Campos origen/destino pueden ser falsificados dentro de una red permisiva; fragmentos pueden evadir controles que no reensamblen igual; ACL TCP deja UDP/ICMP sin política. [PPA, cap. 5]
+
+TCP usa 4-tupla, SEQ y ACK. ACK es siguiente byte esperado; SYN y FIN consumen secuencia. Apertura: SYN(x), SYN-ACK(y,x+1), ACK(y+1); cliente CLOSED→SYN-SENT→ESTABLISHED, servidor LISTEN→SYN-RECEIVED→ESTABLISHED. FIN cierra una dirección; RST aborta estado. [PPA, cap. 6]
+
+Una política stateful autoriza SYN esperado y retorno ESTABLISHED,RELATED. Timeout sin SYN-ACK es compatible con DROP; RST demuestra stack alcanzable sin listener. Capture sobre veth/NIC, no sólo any: offload/NAT alteran evidencia. [PPA, cap. 9]
 
 # 2. SCHEMATIC & TOPOLOGY BLUEPRINTS
 

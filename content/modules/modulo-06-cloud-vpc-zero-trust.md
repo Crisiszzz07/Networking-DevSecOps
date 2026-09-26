@@ -17,6 +17,41 @@ lab_runtime: "Bash; validación local transferible a CLI cloud"
 
 > Trazabilidad: Securing DevOps (SD), caps. 2, 4–5; Zero Trust Networks (ZTN), caps. 1–3.
 
+## El problema: una red privada no es una red confiable
+
+Llegar a “la VPC es privada” no responde quién puede llamar a quién, por qué camino, ni con qué identidad. Un Security Group abierto puede permitir una conexión innecesaria; un private endpoint evita Internet pero no autentica al workload; una identidad mTLS no arregla una ruta pública que nunca debió existir. [SD, cap. 4; ZTN, caps. 1–3]
+
+Este módulo cierra el roadmap uniendo las decisiones anteriores: para una conexión API→base de datos debes poder demostrar **ruta privada mínima, puerto mínimo, retorno permitido, identidad autenticada y decisión auditada**.
+
+## Mapa mínimo: defensa en profundidad por cada flujo
+
+    cliente
+       │ Internet sólo hasta el borde
+       ▼
+    edge público ── WAF / balanceador / SG de entrada
+       │
+       ▼
+    aplicación privada ── SG mínimo + identidad mTLS
+       │
+       ▼
+    datos privados ── ruta sin Internet + puerto mínimo
+
+    control plane ── emite y rota identidad/política
+    data plane    ── autentica, autoriza y registra cada conexión
+
+Cada capa responde a una pregunta diferente: la tabla de rutas dice si existe un camino; SG/NACL limitan qué tránsito es posible; mTLS y SPIFFE dicen quién es el peer; la telemetría permite probar después qué decisión ocurrió. Ninguna sustituye a otra. [SD, caps. 2 y 4; ZTN, caps. 1–3]
+
+## Ruta de estudio y conexión con el roadmap
+
+1. Dibuja primero el camino permitido, no sólo las subredes.
+2. Diferencia el retorno stateful de un SG del retorno explícito que necesita un NACL stateless.
+3. Comprueba que DNS y rutas de un endpoint privado no salen por NAT/Internet.
+4. Añade identidad corta, mTLS y policy por workload sobre la segmentación de red.
+
+Has recorrido la misma conexión desde los bytes del paquete hasta su autorización distribuida: M1 aportó evidencia, M2 el camino Linux, M3 identidad criptográfica, M4 el datapath Kubernetes y M5 observabilidad/enforcement en kernel.
+
+## Referencia técnica: VPC, perímetros e identidad
+
 VPC divide IP en subredes/rutas. Deje Internet-facing sólo en edge; app/datos privados y sin IP pública. Private endpoint evita tránsito público, no autentica llamante. Segmentación requiere rutas, firewall stateful por workload, ACL cuando aporte, identidad y autorización. [SD, caps. 2, 4]
 
 Security Group es stateful por interfaz: entrada permitida permite retorno. NACL suele ser stateless por subred: requiere ambos sentidos y puertos efímeros. No se sustituyen. Restrinja y pruebe SG; no exponga tiers internos. [SD, cap. 4]

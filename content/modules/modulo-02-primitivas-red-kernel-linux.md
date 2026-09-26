@@ -14,20 +14,38 @@ lab_runtime: "Linux, iproute2, iptables/nftables; root"
 
 > Trazabilidad: Networking and Kubernetes (N&K), caps. 2–3.
 
-Cada netns tiene interfaces, rutas, puertos, sockets y Netfilter propios. Veth es par: TX en uno es RX en peer. Bridge aprende MAC origen en FDB, entrega por puerto conocido o inunda unknown/broadcast; es L2 y no implementa autorización L3. [N&K, caps. 2–3]
+## El incidente que este módulo te ayuda a desenredar
 
-Datapath IPv4: NIC→PREROUTING→ruta→INPUT para local, o FORWARD→POSTROUTING para tránsito. Paquete local: OUTPUT→POSTROUTING. Conntrack asocia tupla inicial/reply; nat crea traducción por flujo; filter acepta/deniega; mangle marca. MASQUERADE es SNAT dinámico: útil para egress variable, costoso en atribución/estado. [N&K, cap. 2]
+En el módulo 1 ya viste un SYN salir del cliente y quizá desaparecer. Ahora la pregunta es: **¿qué parte del host Linux decidió su camino?** En un host con contenedores no hay una sola “red”: hay namespaces, cables virtuales, bridges, rutas, traducciones y reglas que pueden afectar el mismo flujo en instantes distintos. [N&K, caps. 2–3]
 
-| Primitiva | Invariante | Riesgo cloud-native |
-|---|---|---|
-| netns | puertos/rutas aislados | asumir host y pod comparten listener |
-| veth | frontera por workload | capturar interfaz equivocada |
-| bridge | forwarding MAC | lateral movement L2 |
-| conntrack | estado/timeout | agotamiento DoS |
-| SNAT | origen reescrito | logs sin IP cliente |
+El objetivo no es aprender comandos `ip` o `iptables` de memoria. Es poder explicar, por ejemplo: “el paquete salió del namespace worker, cruzó su veth, fue enrutado por el host y la cadena FORWARD lo descartó antes del namespace api”.
 
-DNAT en PREROUTING modifica destino antes de FORWARD; documente pre/post NAT. DROP expira; REJECT expone decisión. Default allow FORWARD abre red lateral.
+## Mapa mínimo: del proceso aislado a la decisión de firewall
 
+    proceso en contenedor
+             │
+             ▼
+    network namespace ── tiene sus propios puertos, rutas e interfaces
+             │
+             ▼
+    veth ── cable virtual; un extremo recibe lo que el otro transmite
+             │
+             ▼
+    bridge o ruta L3 ── decide por MAC o por prefijo IP
+             │
+             ▼
+    Netfilter/conntrack ── permite, deniega o traduce el flujo
+
+La distinción importante es esta: un bridge no decide por IP ni “pasa por FORWARD” necesariamente; una ruta L3 sí lleva el paquete a Netfilter. Por eso primero identificas el camino y sólo después interpretas una regla. [N&K, cap. 2]
+
+## Ruta de estudio y conexión con el roadmap
+
+1. Construye dos namespaces y mira qué objetos pertenecen a cada uno.
+2. Sigue un paquete por veth y bridge para distinguir L2 de routing L3.
+3. Usa PREROUTING, FORWARD y POSTROUTING para ubicar una regla.
+4. Añade conntrack/NAT para explicar el estado y la pérdida de identidad por IP.
+
+El siguiente módulo añade una pregunta distinta: aun cuando el paquete llega al destino, ¿cómo sabe la aplicación **qué nombre e identidad criptográfica** está al otro lado? Ahí entran DNS, TLS y mTLS.
 
 ## El aislamiento aparece antes de que exista un contenedor
 
@@ -64,6 +82,22 @@ LN2-FORWARD recibe sólo worker→api: permite retorno establecido, TCP/8080 y t
        1    60 DROP     all   0.0.0.0/0           0.0.0.0/0
 
 Si el contador DROP sube al probar 8081 hay enforcement. Si no cambia, investigue ruta/bridge/cadena antes de culpar la regla.
+
+## Referencia técnica: primitivas y datapath
+
+Cada netns tiene interfaces, rutas, puertos, sockets y Netfilter propios. Veth es par: TX en uno es RX en peer. Bridge aprende MAC origen en FDB, entrega por puerto conocido o inunda unknown/broadcast; es L2 y no implementa autorización L3. [N&K, caps. 2–3]
+
+Datapath IPv4: NIC→PREROUTING→ruta→INPUT para local, o FORWARD→POSTROUTING para tránsito. Paquete local: OUTPUT→POSTROUTING. Conntrack asocia tupla inicial/reply; nat crea traducción por flujo; filter acepta/deniega; mangle marca. MASQUERADE es SNAT dinámico: útil para egress variable, costoso en atribución/estado. [N&K, cap. 2]
+
+| Primitiva | Invariante | Riesgo cloud-native |
+|---|---|---|
+| netns | puertos/rutas aislados | asumir host y pod comparten listener |
+| veth | frontera por workload | capturar interfaz equivocada |
+| bridge | forwarding MAC | lateral movement L2 |
+| conntrack | estado/timeout | agotamiento DoS |
+| SNAT | origen reescrito | logs sin IP cliente |
+
+DNAT en PREROUTING modifica destino antes de FORWARD; documente pre/post NAT. DROP expira; REJECT expone decisión. Default allow FORWARD abre red lateral.
 
 # 2. SCHEMATIC & TOPOLOGY BLUEPRINTS
 

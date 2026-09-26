@@ -17,6 +17,38 @@ lab_runtime: "Linux, Bash, openssl"
 
 > Trazabilidad: DNS y L7: Practical Packet Analysis (PPA), caps. 8–9. CA, PKI, trust: Zero Trust Networks (ZTN), cap. 2. TLS 1.3 es actualización operativa, no atribución a PPA 2009.
 
+## El problema: llegar a una IP no prueba con quién hablaste
+
+Una aplicación puede resolver un nombre, abrir TCP y aun así estar conectándose al servicio equivocado. DNS responde “a qué IP intento ir”; TLS responde “qué clave e identidad presentó el peer”; mTLS añade “qué identidad presentó también el cliente”. Confundir esas respuestas conduce a atajos como desactivar la validación de certificado, que cifra el tráfico pero elimina la verificación del interlocutor. [PPA, cap. 8; ZTN, cap. 2]
+
+Al terminar podrás diagnosticar casos como: “DNS funciona y la ruta TCP existe, pero el SAN del certificado no corresponde a `api.internal`; la conexión debe rechazarse”. Esa separación es la base de Zero Trust entre servicios.
+
+## Mapa mínimo: nombre, camino e identidad son controles distintos
+
+    aplicación
+       │ pregunta «¿dónde está api.internal?»
+       ▼
+    DNS ── nombre → IP, TTL, tipo de respuesta
+       │ abre conexión a esa IP
+       ▼
+    TCP ── comprueba alcance y sesión
+       │ negocia claves y presenta certificados
+       ▼
+    TLS/mTLS ── ¿la identidad y el contexto están autorizados?
+
+Aprende primero a no mezclar las capas. Un registro A correcto no autentica; SNI selecciona un certificado pero tampoco autentica; una cadena válida no basta si el SAN no coincide con la identidad esperada. [PPA, cap. 8; ZTN, cap. 2]
+
+## Ruta de estudio y conexión con el roadmap
+
+1. Lee una respuesta DNS como estructura: nombre, tipo, TTL y RCODE.
+2. Separa resolución de establecimiento TCP.
+3. Recorre TLS 1.3 como negociación de secreto y prueba de identidad.
+4. Añade mTLS y política por SPIFFE/SAN para decidir quién puede llamar.
+
+En Kubernetes, el módulo siguiente hará que esta misma conversación atraviese Pods, Services, CNI y NetworkPolicies: descubrir un Service no equivale a estar autorizado a usarlo.
+
+## Referencia técnica: DNS, TLS y mTLS
+
 DNS usa UDP/53; TCP/53 sirve transferencias, respuestas grandes/fallback. Cabecera: ID, QR/Opcode/AA/TC/RD/RA/RCODE, QD/AN/NS/AR. RR: NAME, TYPE, CLASS, TTL, RDLENGTH, RDATA. A entrega IPv4; SRV prioridad/peso/puerto/target; TXT texto opaco. TTL permite cache, no autorización. [PPA, cap. 8]
 
 TLS 1.3 negocia secreto efímero con ClientHello (SNI, ALPN, key share), ServerHello y mensajes cifrados. X.509 vincula clave/identidad: valide trust anchor, tiempo, SAN/hostname, key usage y revocación. SNI selecciona virtual host, no autentica.
