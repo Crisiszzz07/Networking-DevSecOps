@@ -40,11 +40,15 @@
   --color-star-dim: oklch(76% 0.050 295);
   --color-nebula: oklch(34% 0.140 300);
   --color-nebula-2: oklch(28% 0.110 270);
-  --color-nebula-3: oklch(30% 0.130 335);
   --color-focus: oklch(88% 0.120 320);
   --color-glass: oklch(15% 0.055 292 / 0.72);
   --color-glass-edge: oklch(85% 0.070 305 / 0.16);
   --color-shadow: oklch(4% 0.030 290 / 0.65);
+  --color-highlight: oklch(100% 0 0 / 0.35);
+  --color-inset: oklch(15% 0.055 292 / 0.35);
+  --color-plate: oklch(16% 0.058 293 / 0.6);
+  --color-scanline: oklch(100% 0 0 / 0.018);
+  --color-vignette: oklch(5% 0.03 290 / 0.7);
 
   /* Sky gradient (#060818 → #141a3d, pushed toward violet). */
   --sky-top: oklch(9% 0.045 285);
@@ -57,6 +61,8 @@
   --hue-4: 338;
   --hue-5: 288;
   --hue-6: 0;
+  /* Lightness + chroma shared by every constellation colour: oklch(var(--const-lc) var(--hue-n)). */
+  --const-lc: 80% 0.13;
 
   /* Functional signals — always paired with a glyph, never colour alone. */
   --color-allow: oklch(82% 0.110 170);

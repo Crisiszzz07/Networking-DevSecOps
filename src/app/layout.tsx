@@ -48,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <span>Verificador local: tools/verifier (Go)</span>
           </div>
           <p className="footer-motto">
-            <span className="tok-prompt">$ </span>traceroute --hasta=zero-trust <span className="cursor" aria-hidden />
+            <span className="tok-prompt">$ </span>traceroute --hasta=zero-trust
           </p>
         </footer>
       </body>

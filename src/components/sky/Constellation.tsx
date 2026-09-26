@@ -418,9 +418,6 @@ export function Constellation({ sky }: { sky: Sky }) {
   const tracePanel = (
     <div className="grid gap-lg">
       <div>
-        <p className="sky-kicker">
-          <span className="tok-prompt">$</span> route add --custom
-        </p>
         <h2 className="panel-title">Traza tu ruta</h2>
         <p className="panel-sig">tu propio asterismo, anunciado como un AS privado</p>
       </div>
@@ -465,8 +462,6 @@ export function Constellation({ sky }: { sky: Sky }) {
     >
       <div className="sky-canvas" ref={canvas}>
         <CelestialSphere grid={grid} dragTarget={canvas} />
-        <span className="sky-shoot" aria-hidden />
-        <span className="sky-shoot sky-shoot-2" aria-hidden />
         <svg
           viewBox={`0 0 ${W} ${H}`}
           preserveAspectRatio="xMidYMid meet"
@@ -1059,12 +1054,7 @@ function ConceptCard({
         <ArrowLeft size={14} aria-hidden />
         Subred M{home.num} · {home.title}
       </button>
-      <div>
-        <p className="concept-kicker">
-          <Sparkles size={13} aria-hidden /> Host en línea · subred M{home.num}
-        </p>
-        <h2 className="concept-title">{concept.term}</h2>
-      </div>
+      <h2 className="concept-title">{concept.term}</h2>
       <p className="text-md text-ink">{concept.short}</p>
       <div className="concept-analogy hud">
         <p className="label-mono">Piénsalo así</p>

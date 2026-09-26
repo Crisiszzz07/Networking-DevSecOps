@@ -63,7 +63,6 @@ export function TheoryPanel({
     <div className="theory-shell">
       <section className="reading-orientation" aria-label="Guía de lectura">
         <div className="min-w-0">
-          <p className="reading-kicker">Ruta de estudio</p>
           <h2 className="reading-title">Lee el mecanismo; después interroga la evidencia.</h2>
           <p className="mt-2xs max-w-[64ch] text-sm text-muted">
             La teoría define qué debe ocurrir. Las figuras y tablas reducen el mecanismo a señales observables; la

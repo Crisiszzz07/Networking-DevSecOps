@@ -195,17 +195,17 @@
   .btn-primary {
     border-color: var(--color-accent);
     color: var(--color-on-accent);
-    background: linear-gradient(180deg, var(--color-focus), var(--color-accent) 60%, var(--color-accent-dim));
-    box-shadow: 0 0 0 0 var(--color-accent-dim), inset 0 1px 0 oklch(100% 0 0 / 0.35);
+    background: var(--color-accent);
+    box-shadow: 0 0 0 0 var(--color-accent-dim), inset 0 1px 0 var(--color-highlight);
     transition:
       transform var(--dur-micro) var(--ease-out),
       box-shadow var(--dur-short) var(--ease-out),
       background-color var(--dur-micro) var(--ease-out);
   }
   .btn-primary:hover {
-    background: linear-gradient(180deg, var(--color-ink), var(--color-focus) 60%, var(--color-accent));
+    background: var(--color-focus);
     border-color: var(--color-focus);
-    box-shadow: 0 0 32px -4px var(--color-accent), inset 0 1px 0 oklch(100% 0 0 / 0.35);
+    box-shadow: 0 0 32px -4px var(--color-accent), inset 0 1px 0 var(--color-highlight);
   }
   .btn-ghost {
     border-color: transparent;
@@ -299,7 +299,6 @@
     text-transform: uppercase;
   }
   .reading-title {
-    margin-top: var(--space-2xs);
     max-width: 32ch;
     color: var(--color-ink);
     font-size: var(--text-lg);
@@ -720,7 +719,7 @@
     padding: var(--space-lg);
     border: var(--rule-hair) solid var(--color-rule-strong);
     border-radius: var(--radius-md);
-    background: linear-gradient(135deg, var(--color-paper-2), var(--color-paper-1));
+    background: linear-gradient(135deg, var(--color-paper-2), var(--color-paper));
   }
   .theory-practice {
     width: min(100%, 78ch);
@@ -754,7 +753,8 @@
     display: grid;
     gap: var(--space-sm);
     padding: var(--space-md);
-    border-left: 2px solid var(--color-gilt);
+    border: var(--rule-hair) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
     background: var(--color-paper-3);
   }
   .decision-scenario p {
@@ -839,14 +839,15 @@
     display: grid;
     gap: var(--space-sm);
     padding: var(--space-md);
-    border-left: 2px solid var(--color-rule-strong);
+    border: var(--rule-hair) solid var(--color-rule-strong);
+    border-radius: var(--radius-sm);
     background: var(--color-paper-3);
   }
   .decision-feedback.is-correct {
-    border-left-color: var(--color-allow);
+    border-color: var(--color-allow);
   }
   .decision-feedback.is-incorrect {
-    border-left-color: var(--color-deny);
+    border-color: var(--color-deny);
   }
   .decision-feedback-title,
   .decision-evidence > p {
@@ -904,7 +905,7 @@
     border-bottom: var(--rule-hair) solid var(--color-gilt-dim);
     text-align: left;
     font-family: var(--font-display);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     font-weight: 600;
     letter-spacing: var(--tracking-caps);
     text-transform: uppercase;
@@ -1130,7 +1131,7 @@
     background:
       radial-gradient(120% 140% at 0% 0%, var(--color-const-wash, var(--color-accent-wash)), transparent 70%),
       var(--color-paper-3);
-    box-shadow: inset 0 0 0 4px oklch(15% 0.055 292 / 0.35), inset 0 0 0 5px var(--color-gilt-faint);
+    box-shadow: inset 0 0 0 4px var(--color-inset), inset 0 0 0 5px var(--color-gilt-faint);
   }
   .quad-tab .quad-title {
     font-family: var(--font-display);
@@ -1474,7 +1475,7 @@
   }
   .brand-sub {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.04em;
     color: var(--color-neutral);
   }
@@ -1514,7 +1515,6 @@
     background:
       radial-gradient(50% 38% at 24% 34%, var(--color-nebula), transparent 70%),
       radial-gradient(42% 42% at 76% 80%, var(--color-nebula-2), transparent 70%),
-      radial-gradient(32% 32% at 92% 12%, var(--color-nebula-3), transparent 70%),
       linear-gradient(180deg, var(--sky-top), var(--sky-bottom));
     cursor: grab;
     touch-action: pan-y;
@@ -1533,8 +1533,8 @@
     position: absolute;
     inset: 0;
     background:
-      repeating-linear-gradient(180deg, oklch(100% 0 0 / 0.018) 0 1px, transparent 1px 3px),
-      radial-gradient(120% 90% at 50% 45%, transparent 55%, oklch(5% 0.03 290 / 0.7));
+      repeating-linear-gradient(180deg, var(--color-scanline) 0 1px, transparent 1px 3px),
+      radial-gradient(120% 90% at 50% 45%, transparent 55%, var(--color-vignette));
     pointer-events: none;
   }
   .sky-sphere {
@@ -1600,14 +1600,9 @@
     letter-spacing: -0.01em;
     text-transform: uppercase;
     color: var(--color-ink);
-    text-shadow: 0 0 30px oklch(60% 0.2 310 / 0.35);
   }
   .sky-title span {
-    background: linear-gradient(90deg, var(--color-focus), var(--color-accent) 60%, var(--color-signal));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: none;
+    color: var(--color-accent);
   }
   .sky-prompt {
     font-family: var(--font-mono);
@@ -1628,7 +1623,7 @@
   }
   .sky-stats dt {
     font-family: var(--font-mono);
-    font-size: 0.68rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--color-neutral);
@@ -1640,12 +1635,10 @@
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
     color: var(--color-accent);
-    text-shadow: 0 0 22px var(--color-accent-dim);
   }
   .sky-stats dd span {
     color: var(--color-neutral);
     font-size: var(--text-md);
-    text-shadow: none;
   }
   @media (max-width: 560px) {
     .sky-stats {
@@ -1689,7 +1682,7 @@
     border-radius: 3px;
     color: var(--color-muted);
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     letter-spacing: 0.02em;
     white-space: nowrap;
     cursor: pointer;
@@ -1755,9 +1748,7 @@
     padding: var(--space-md) var(--space-lg);
     border: var(--rule-hair) solid var(--color-glass-edge);
     border-radius: var(--radius-sm);
-    background: var(--color-glass);
-    -webkit-backdrop-filter: blur(14px);
-    backdrop-filter: blur(14px);
+    background: var(--color-paper-2);
     --hud-c: var(--color-accent);
     pointer-events: none;
     transform: translateX(-50%);
@@ -1902,16 +1893,7 @@
     color: var(--color-muted);
     text-shadow: none;
   }
-  .concept-kicker {
-    display: flex;
-    align-items: center;
-    gap: var(--space-xs);
-    font-family: var(--font-mono);
-    font-size: var(--text-xs);
-    color: var(--color-const);
-  }
   .concept-title {
-    margin-top: var(--space-2xs);
     font-size: var(--text-2xl);
     font-weight: 700;
     color: var(--color-const-hot);
@@ -1971,7 +1953,7 @@
   .const-cidr {
     display: block;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     color: var(--color-const);
     opacity: 0.9;
   }
@@ -2025,14 +2007,14 @@
   .ast-row-tag {
     display: block;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: var(--text-xs);
     color: var(--color-signal);
   }
   .ast-row-terms {
     display: block;
     margin-top: var(--space-3xs);
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     color: var(--color-neutral);
     overflow-wrap: anywhere;
   }
@@ -2077,7 +2059,7 @@
     border: var(--rule-hair) solid var(--color-gilt-dim);
     border-radius: 3px;
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: var(--text-xs);
     color: var(--color-gilt);
   }
   .trace-steps li[data-done="true"] {
@@ -2174,14 +2156,12 @@
   .sky-concept .star-body {
     transform-box: fill-box;
     transform-origin: center;
-    animation: breathe 4s var(--ease-in-out) infinite alternate;
     transition: transform var(--dur-short) var(--ease-out);
   }
   .sky-concept:hover .star-body,
   .sky-concept:focus-visible .star-body,
   .sky-concept[data-selected="true"] .star-body,
   .sky-concept[data-picked="true"] .star-body {
-    animation-play-state: paused;
     transform: scale(1.45);
   }
   .sky-concept .core {
@@ -2225,7 +2205,6 @@
     opacity: 0.75;
     transform-box: fill-box;
     transform-origin: center;
-    animation: pulse 5s var(--ease-in-out) infinite alternate;
     transition: opacity var(--dur-long) var(--ease-out);
   }
   .sky-module[data-hot="true"] .bloom,
@@ -2236,7 +2215,6 @@
     opacity: 0.7;
     transform-box: fill-box;
     transform-origin: center;
-    animation: glint 6s var(--ease-in-out) infinite alternate;
   }
   .sky-module .spikes-diag {
     opacity: 0.35;
@@ -2254,7 +2232,6 @@
     stroke-dashoffset: 4.5;
     transform-box: fill-box;
     transform-origin: center;
-    animation: spin 60s linear infinite;
   }
   .sky-module .reticle-fine {
     stroke-dasharray: 1 5;
@@ -2266,7 +2243,7 @@
   }
   .sky-module[data-hot="true"] .reticle-arcs,
   .sky-module[data-focus="true"] .reticle-arcs {
-    animation-duration: 8s;
+    animation: spin 8s linear infinite;
   }
   .sky-module .orbit {
     fill: none;
@@ -2276,12 +2253,11 @@
     opacity: 0.6;
     transform-box: fill-box;
     transform-origin: center;
-    animation: spin 40s linear infinite;
   }
   .sky-module[data-hot="true"] .orbit,
   .sky-module[data-focus="true"] .orbit {
     opacity: 1;
-    animation-duration: 12s;
+    animation: spin 12s linear infinite;
   }
   .sky-module .track {
     fill: none;
@@ -2377,7 +2353,6 @@
     stroke-dasharray: 6 6.5;
     transform-box: fill-box;
     transform-origin: center;
-    animation: spin 120s linear infinite;
   }
   .ast[data-state="hot"] .ast-halo,
   .ast[data-born="true"] .ast-halo { opacity: 1; }
@@ -2434,28 +2409,6 @@
     animation: beacon 1.8s var(--ease-out) infinite;
   }
 
-  /* Shooting stars: rare, quick, decorative only. */
-  .sky-shoot {
-    position: absolute;
-    z-index: 1;
-    top: 12%;
-    left: 60%;
-    width: 160px;
-    height: 1.5px;
-    background: linear-gradient(90deg, transparent, var(--color-star));
-    border-radius: 2px;
-    opacity: 0;
-    transform: rotate(-24deg);
-    animation: shoot 11s var(--ease-in) infinite;
-    animation-delay: 3s;
-    pointer-events: none;
-  }
-  .sky-shoot-2 {
-    top: 62%;
-    left: 18%;
-    animation-duration: 17s;
-    animation-delay: 9s;
-  }
 
   /* ─ Chips, legend ─ */
   .star-chip {
@@ -2513,12 +2466,12 @@
     height: 8px;
     margin-inline: 3px;
     background: conic-gradient(
-      oklch(80% 0.13 var(--hue-1)) 0 60deg,
-      oklch(80% 0.13 var(--hue-2)) 0 120deg,
-      oklch(80% 0.13 var(--hue-3)) 0 180deg,
-      oklch(80% 0.13 var(--hue-4)) 0 240deg,
-      oklch(80% 0.13 var(--hue-5)) 0 300deg,
-      oklch(80% 0.13 var(--hue-6)) 0
+      oklch(var(--const-lc) var(--hue-1)) 0 60deg,
+      oklch(var(--const-lc) var(--hue-2)) 0 120deg,
+      oklch(var(--const-lc) var(--hue-3)) 0 180deg,
+      oklch(var(--const-lc) var(--hue-4)) 0 240deg,
+      oklch(var(--const-lc) var(--hue-5)) 0 300deg,
+      oklch(var(--const-lc) var(--hue-6)) 0
     );
   }
   .legend-line {
@@ -2537,9 +2490,7 @@
 
   .btn-glass {
     border-color: var(--color-glass-edge);
-    background: var(--color-glass);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
+    background: var(--color-paper-2);
   }
   .btn-lg {
     min-height: 2.75rem;
@@ -2605,21 +2556,12 @@
     position: absolute;
     inset: 0;
     border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent 0 300deg, oklch(80% 0.13 var(--h, 305) / 0.28) 360deg);
+    background: conic-gradient(from 0deg, transparent 0 300deg, oklch(var(--const-lc) var(--h, 305) / 0.28) 360deg);
     animation: spin 6s linear infinite;
     pointer-events: none;
   }
   .module-hero {
     position: relative;
-  }
-  .module-hero::before {
-    content: "";
-    position: absolute;
-    inset: -30% -10% auto 40%;
-    height: 140%;
-    background: radial-gradient(closest-side, var(--color-const-wash), transparent);
-    pointer-events: none;
-    z-index: -1;
   }
   .module-eyebrow {
     font-family: var(--font-mono);
@@ -2636,10 +2578,7 @@
     line-height: 1;
     letter-spacing: -0.01em;
     text-transform: uppercase;
-    background: linear-gradient(180deg, var(--color-ink) 35%, var(--color-const-hot) 80%, var(--color-const));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--color-ink);
   }
   .module-sig {
     font-family: var(--font-mono);
@@ -2682,7 +2621,7 @@
     padding: var(--space-lg);
     border: var(--rule-hair) solid var(--color-glass-edge);
     border-radius: var(--radius-sm);
-    background: oklch(16% 0.058 293 / 0.6);
+    background: var(--color-plate);
   }
 
   /* HUD corner brackets: four L-shaped corners drawn as background layers, so they
@@ -2704,18 +2643,6 @@
 @keyframes twinkle {
   from { opacity: 0.08; }
 }
-@keyframes breathe {
-  from { transform: scale(0.82); opacity: 0.75; }
-  to { transform: scale(1.08); opacity: 1; }
-}
-@keyframes pulse {
-  from { transform: scale(0.9); }
-  to { transform: scale(1.08); }
-}
-@keyframes glint {
-  from { transform: scale(0.85) rotate(-4deg); opacity: 0.45; }
-  to { transform: scale(1.1) rotate(4deg); opacity: 0.85; }
-}
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -2728,12 +2655,6 @@
 @keyframes beacon {
   from { transform: scale(0.7); opacity: 0.9; }
   to { transform: scale(1.7); opacity: 0; }
-}
-@keyframes shoot {
-  0% { opacity: 0; transform: rotate(-24deg) translateX(0); }
-  2% { opacity: 1; }
-  7% { opacity: 0; transform: rotate(-24deg) translateX(-420px); }
-  100% { opacity: 0; transform: rotate(-24deg) translateX(-420px); }
 }
 @keyframes blink {
   50% { opacity: 0; }
@@ -2761,12 +2682,8 @@
   .mini-plate::before,
   .ast-pick,
   .sky-module .beacon,
-  .sky-module .bloom,
-  .sky-module .spikes,
   .sky-module .orbit,
-  .sky-concept .star-body,
-  .sky-echo,
-  .sky-shoot {
+  .sky-echo {
     animation: none;
   }
   .sky-figure,
@@ -2774,8 +2691,7 @@
     animation: none;
     stroke-dashoffset: 0;
   }
-  .sky-packet,
-  .sky-shoot {
+  .sky-packet {
     display: none;
   }
   .sky-camera { transition-duration: 150ms; }
