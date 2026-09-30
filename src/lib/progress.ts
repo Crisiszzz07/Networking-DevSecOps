@@ -230,3 +230,28 @@ export function nextStep<T extends Track>(
   }
   return null;
 }
+
+// ─── Solved checkpoints ─────────────────────────────────────────────────────
+// Ids of decision checkpoints answered correctly at least once. Not reactive:
+// read on mount by the checkpoint itself and by the review shelf.
+
+const CHECKPOINTS_KEY = "lnet:decision-checkpoints:v1";
+
+export function solvedCheckpoints(): string[] {
+  try {
+    const raw = window.localStorage.getItem(CHECKPOINTS_KEY);
+    const saved: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(saved) ? saved.filter((value): value is string => typeof value === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export function rememberCheckpoint(id: string) {
+  try {
+    const current = solvedCheckpoints();
+    if (!current.includes(id)) window.localStorage.setItem(CHECKPOINTS_KEY, JSON.stringify([...current, id]));
+  } catch {
+    /* A blocked store must not prevent learning in the current session. */
+  }
+}

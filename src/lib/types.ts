@@ -35,6 +35,8 @@ export type Lesson = {
   kind: LessonKind;
   /** Markdown of the section, heading included. */
   markdown: string;
+  /** Opening paragraph as plain text, citations removed: the thesis the lesson defends. */
+  summary: string;
   minutes: number;
 };
 

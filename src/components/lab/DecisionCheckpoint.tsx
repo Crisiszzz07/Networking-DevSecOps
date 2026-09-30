@@ -3,34 +3,14 @@
 import { Check, RotateCcw, ScanSearch, X } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
 import type { DecisionCheckpointSpec } from "@/lib/checkpoints";
-
-const STORAGE_KEY = "lnet:decision-checkpoints:v1";
-
-function completedIds(): string[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const saved = raw ? JSON.parse(raw) : [];
-    return Array.isArray(saved) ? saved.filter((value): value is string => typeof value === "string") : [];
-  } catch {
-    return [];
-  }
-}
-
-function remember(id: string) {
-  try {
-    const current = completedIds();
-    if (!current.includes(id)) window.localStorage.setItem(STORAGE_KEY, JSON.stringify([...current, id]));
-  } catch {
-    /* A blocked store must not prevent learning in the current session. */
-  }
-}
+import { rememberCheckpoint, solvedCheckpoints } from "@/lib/progress";
 
 export function DecisionCheckpoint({ checkpoint, source }: { checkpoint: DecisionCheckpointSpec; source: ReactNode }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [wasCompleted, setWasCompleted] = useState(false);
   const selected = checkpoint.options.find((option) => option.id === selectedId) ?? null;
   useEffect(() => {
-    setWasCompleted(completedIds().includes(checkpoint.id));
+    setWasCompleted(solvedCheckpoints().includes(checkpoint.id));
   }, [checkpoint.id]);
 
   function answer(optionId: string) {
@@ -38,7 +18,7 @@ export function DecisionCheckpoint({ checkpoint, source }: { checkpoint: Decisio
     if (!option || selectedId) return;
     setSelectedId(optionId);
     if (option.correct) {
-      remember(checkpoint.id);
+      rememberCheckpoint(checkpoint.id);
       setWasCompleted(true);
     }
   }

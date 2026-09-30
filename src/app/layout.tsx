@@ -3,6 +3,8 @@ import { Chakra_Petch, IBM_Plex_Sans, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 import { ContinueLink } from "@/components/hallmark/ContinueLink";
 import { NetworkLogo } from "@/components/hallmark/NetworkLogo";
+import { ReviewLink } from "@/components/review/ReviewLink";
+import { buildDeck, deckKeys } from "@/lib/deck";
 import { loadModules, summarise } from "@/lib/content";
 import "@/styles/globals.css";
 
@@ -18,7 +20,9 @@ export const metadata: Metadata = {
 export const viewport: Viewport = { themeColor: "oklch(13.5% 0.055 292)", colorScheme: "dark" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const summaries = loadModules().map(summarise);
+  const modules = loadModules();
+  const summaries = modules.map(summarise);
+  const reviewKeys = deckKeys(buildDeck(modules));
   return (
     <html lang="es" className={`${chakra.variable} ${plex.variable} ${jetbrains.variable}`}>
       <body>
@@ -35,7 +39,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <span className="brand-sub">mapa estelar de red</span>
             </span>
           </Link>
-          <ContinueLink modules={summaries} />
+          <nav aria-label="Principal" className="flex items-center gap-xs">
+            <ReviewLink keys={reviewKeys} />
+            <ContinueLink modules={summaries} />
+          </nav>
         </header>
         <main id="main">{children}</main>
         <footer className="site-footer mx-gutter mt-3xl">

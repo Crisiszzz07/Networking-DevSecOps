@@ -180,11 +180,13 @@ function lessonsFrom(file: string, body: string, nodes: RootContent[]): { intro:
     const title = toString(group[0]!).trim();
     const words = toString({ type: "root", children: group } as Root).split(/\s+/).filter(Boolean).length;
     const visuals = group.filter((n) => n.type === "code" || n.type === "table").length;
+    const opening = group.find((n) => n.type === "paragraph");
     return {
       id: lessonSlug(title),
       title,
       kind: lessonKind(title),
       markdown: sliceMarkdown(body, group),
+      summary: opening ? toString(opening).replace(/\s*\[[^\]]*\]/g, "").trim() : "",
       minutes: Math.ceil(words / WORDS_PER_MINUTE) + visuals,
     };
   });
