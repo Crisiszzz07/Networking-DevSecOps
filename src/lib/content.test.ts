@@ -22,6 +22,23 @@ describe("content contract", () => {
     expect(bySlugPrefix(6).meta.books.map((b) => b.abbr)).toEqual(["SD", "ZTN"]);
   });
 
+  it("splits every theory into lessons at its ## headings", () => {
+    for (const m of modules) {
+      const counted = m.theory.lessons.filter((l) => l.kind === "leccion");
+      expect(counted.length).toBeGreaterThanOrEqual(3);
+      expect(m.theory.lessons.filter((l) => l.kind === "orientacion").map((l) => l.title)).toEqual([
+        expect.stringMatching(/^Ruta de estudio/),
+      ]);
+      for (const l of m.theory.lessons) {
+        expect(l.markdown.startsWith(`## ${l.title}`)).toBe(true);
+        expect(l.minutes).toBeGreaterThanOrEqual(1);
+      }
+    }
+    const m1 = bySlugPrefix(1).theory.lessons;
+    expect(m1[0]!.id).toBe("antes-de-mirar-una-cabecera-que-incidente-estas-intentando-explicar");
+    expect(m1.at(-1)!.kind).toBe("referencia");
+  });
+
   it("rejects a module whose blueprint drifts from the schema", () => {
     const raw = `---\nid: "modulo-09"\nslug: "x"\ntitle: "X"\nlayer: "L3"\nprimary_books:\n  - title: "B"\n    chapters: ["c"]\n    target_competencies: ["t"]\ncontent_version: 1\nlab_runtime: "bash"\n---\n# 1. CORE MECHANICS\n\ntexto\n\n# 2. SCHEMATIC & TOPOLOGY BLUEPRINTS\n\n    nodes:\n      a: {cidr: 10.0.0.300/24}\n    flow: "a → b"\n\n# 3. INTERACTIVE LAB SPECIFICATION\n\n# 4. GOTCHAS\n\n- x\n`;
     expect(() => parseModule("modulo-09.md", raw)).toThrow(/nodes\.a\.cidr/);

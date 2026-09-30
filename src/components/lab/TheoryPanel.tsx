@@ -1,32 +1,17 @@
 import { isValidElement, type ReactNode } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { buildCitationIndex } from "@/components/hallmark/Cite";
 import type { GlossaryEntry } from "@/lib/glossary";
-import type { BookRef, Gotcha } from "@/lib/types";
+import { countedLessons, lessonAnchor } from "@/lib/lessons";
+import type { BookRef, Gotcha, Lesson } from "@/lib/types";
 import { makeEnricher } from "./enrich";
 import { GlossaryChips } from "./GlossaryTerm";
 import { InteractiveTable } from "./InteractiveTable";
 import { DecisionCheckpoint } from "./DecisionCheckpoint";
+import { LessonCheck, LessonNav } from "./Lessons";
 import { MechanismDiagram } from "./MechanismDiagram";
 import type { DecisionCheckpointSpec } from "@/lib/checkpoints";
-
-function anchorFor(title: string) {
-  return "lectura-" + title
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, "")
-    .trim()
-    .replace(/\s+/g, "-");
-}
-
-function sectionsIn(markdown: string) {
-  return [...markdown.matchAll(/^##\s+(.+)$/gm)].map((match) => {
-    const title = match[1]!.trim();
-    return { title, id: anchorFor(title) };
-  });
-}
 
 function sourceFrom(children: ReactNode): string {
   if (typeof children === "string" || typeof children === "number") return String(children);
@@ -36,7 +21,10 @@ function sourceFrom(children: ReactNode): string {
 }
 
 export function TheoryPanel({
+  moduleId,
   markdown,
+  intro,
+  lessons,
   trace,
   books,
   gotchas,
@@ -44,7 +32,11 @@ export function TheoryPanel({
   checkpoint,
   after,
 }: {
+  moduleId: string;
+  /** Whole theory: citation numbering runs across every lesson. */
   markdown: string;
+  intro: string;
+  lessons: Lesson[];
   trace: string | null;
   books: BookRef[];
   gotchas: Gotcha[];
@@ -56,8 +48,15 @@ export function TheoryPanel({
     [markdown, ...gotchas.map((gotcha) => gotcha.text), ...(checkpoint ? [checkpoint.source] : [])],
     books,
   );
-  const sections = sectionsIn(markdown);
   const enrich = makeEnricher(books, concepts, citations);
+  const counted = countedLessons(lessons);
+  const components: Components = {
+    p: ({ children }) => <p>{enrich(children)}</p>,
+    li: ({ children }) => <li>{enrich(children)}</li>,
+    table: ({ children }) => <InteractiveTable>{children}</InteractiveTable>,
+    td: ({ children }) => <td>{enrich(children)}</td>,
+    pre: ({ children }) => <MechanismDiagram source={sourceFrom(children)} />,
+  };
 
   return (
     <div className="theory-shell">
@@ -66,7 +65,8 @@ export function TheoryPanel({
           <h2 className="reading-title">Lee el mecanismo; después interroga la evidencia.</h2>
           <p className="mt-2xs max-w-[64ch] text-sm text-muted">
             La teoría define qué debe ocurrir. Las figuras y tablas reducen el mecanismo a señales observables; la
-            topología y el inspector de paquete permiten comprobarlo después.
+            topología y el inspector de paquete permiten comprobarlo después. Cada lección termina con «Lo entiendo»:
+            márcala cuando puedas explicarla, no cuando la hayas leído.
           </p>
         </div>
         <details className="concept-drawer">
@@ -81,37 +81,41 @@ export function TheoryPanel({
       </section>
 
       <div className="theory-reader">
-        <article className="prose-lab min-w-0">
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            components={{
-              h2: ({ children }) => <h2 id={anchorFor(String(children))}>{children}</h2>,
-              p: ({ children }) => <p>{enrich(children)}</p>,
-              li: ({ children }) => <li>{enrich(children)}</li>,
-              table: ({ children }) => <InteractiveTable>{children}</InteractiveTable>,
-              td: ({ children }) => <td>{enrich(children)}</td>,
-              pre: ({ children }) => <MechanismDiagram source={sourceFrom(children)} />,
-            }}
-          >
-            {markdown}
-          </ReactMarkdown>
-        </article>
+        <div className="min-w-0">
+          {intro && (
+            <article className="prose-lab">
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                {intro}
+              </ReactMarkdown>
+            </article>
+          )}
+          {lessons.map((lesson) => {
+            const at = counted.findIndex((c) => c.id === lesson.id);
+            return (
+              <section key={lesson.id} id={lessonAnchor(lesson.id)} className="lesson" data-kind={lesson.kind} tabIndex={-1}>
+                <article className="prose-lab">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+                    {lesson.markdown}
+                  </ReactMarkdown>
+                </article>
+                {at >= 0 ? (
+                  <LessonCheck moduleId={moduleId} lesson={counted[at]!} next={counted[at + 1] ?? null} />
+                ) : lesson.kind === "referencia" ? (
+                  <p className="lesson-note">
+                    Referencia: no cuenta para tu progreso. Vuelve aquí cuando necesites un campo o un estado concreto.
+                  </p>
+                ) : null}
+              </section>
+            );
+          })}
+        </div>
 
         <aside className="theory-rail">
-          {sections.length > 0 && (
-            <nav aria-label="Mapa de esta lectura">
-              <p className="rail-label">En esta lectura</p>
-              <ol className="reading-nav">
-                {sections.map((section, index) => (
-                  <li key={section.id}>
-                    <a href={"#" + section.id}>
-                      <span>{String(index + 1).padStart(2, "0")}</span>
-                      {section.title}
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </nav>
+          {lessons.length > 0 && (
+            <LessonNav
+              moduleId={moduleId}
+              items={lessons.map(({ id, title, kind, minutes }) => ({ id, title, kind, minutes }))}
+            />
           )}
 
           <section>
@@ -153,7 +157,7 @@ export function TheoryPanel({
         </aside>
       </div>
       {checkpoint && (
-        <div className="theory-practice">
+        <div id="checkpoint" className="theory-practice" tabIndex={-1}>
           <DecisionCheckpoint checkpoint={checkpoint} source={enrich(checkpoint.source)} />
         </div>
       )}

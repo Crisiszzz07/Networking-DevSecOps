@@ -22,10 +22,32 @@ export type ModuleMeta = {
   dependsOn: string[];
 };
 
+/**
+ * A `##` section of the theory. Only "leccion" counts towards understanding:
+ * the study-route section orients and the technical reference is consulted, not learned.
+ */
+export type LessonKind = "leccion" | "orientacion" | "referencia";
+
+export type Lesson = {
+  /** Stable slug of the title; also the key under which understanding is stored. */
+  id: string;
+  title: string;
+  kind: LessonKind;
+  /** Markdown of the section, heading included. */
+  markdown: string;
+  minutes: number;
+};
+
+/** What progress needs to know about a lesson (client-safe, no markdown). */
+export type LessonRef = Pick<Lesson, "id" | "title" | "minutes">;
+
 export type Theory = {
   /** Raw markdown of the theory section, minus the traceability note. */
   markdown: string;
   trace: string | null;
+  /** Markdown before the first `##`, if any. */
+  intro: string;
+  lessons: Lesson[];
 };
 
 export type CodeBlock = { lang: string | null; value: string };
@@ -188,6 +210,8 @@ export type ModuleSummary = Pick<LearningModule, "meta"> & {
   labId: string;
   objective: string;
   checkCount: number;
+  /** Counted lessons only (kind "leccion"). */
+  lessons: LessonRef[];
   nodeCount: number;
   flowCount: number;
 };

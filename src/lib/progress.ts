@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import type { LessonRef } from "./types";
 
 // Per-viewer lab progress. It lives in this browser only (localStorage), which is
 // the right scope for a local learning tool; every access is guarded because
@@ -133,4 +134,99 @@ export function markSeen(id: string) {
     /* in-memory only */
   }
   seenListeners.forEach((l) => l());
+}
+
+// ─── Understood lessons (comprehension, self-reported) ──────────────────────
+// moduleId → lessonId → when it was marked. The date is kept so a later review
+// pass can decide what is due; only ids that still exist in the content count.
+
+export type UnderstoodState = Record<string, Record<string, string>>;
+
+const UNDERSTOOD_KEY = "lnet:understood:v1";
+const NO_UNDERSTOOD: UnderstoodState = {};
+const understoodListeners = new Set<() => void>();
+let understoodSnap: UnderstoodState | null = null;
+
+function readUnderstood(): UnderstoodState {
+  try {
+    const raw = window.localStorage.getItem(UNDERSTOOD_KEY);
+    return raw ? (JSON.parse(raw) as UnderstoodState) : NO_UNDERSTOOD;
+  } catch {
+    return NO_UNDERSTOOD;
+  }
+}
+
+function subscribeUnderstood(cb: () => void) {
+  understoodListeners.add(cb);
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === UNDERSTOOD_KEY) {
+      understoodSnap = null;
+      cb();
+    }
+  };
+  window.addEventListener("storage", onStorage);
+  return () => {
+    understoodListeners.delete(cb);
+    window.removeEventListener("storage", onStorage);
+  };
+}
+
+export function useUnderstood(): UnderstoodState {
+  return useSyncExternalStore(
+    subscribeUnderstood,
+    () => (understoodSnap ??= readUnderstood()),
+    () => NO_UNDERSTOOD,
+  );
+}
+
+export function setUnderstood(moduleId: string, lessonId: string, on: boolean) {
+  const cur = (understoodSnap ??= readUnderstood());
+  const mod = { ...cur[moduleId] };
+  if (on) mod[lessonId] = new Date().toISOString();
+  else delete mod[lessonId];
+  understoodSnap = { ...cur, [moduleId]: mod };
+  try {
+    window.localStorage.setItem(UNDERSTOOD_KEY, JSON.stringify(understoodSnap));
+  } catch {
+    /* in-memory only */
+  }
+  understoodListeners.forEach((l) => l());
+}
+
+export const isUnderstood = (state: UnderstoodState, moduleId: string, lessonId: string) =>
+  Boolean(state[moduleId]?.[lessonId]);
+
+export function understoodCount(state: UnderstoodState, moduleId: string, lessons: LessonRef[]): number {
+  return lessons.filter((l) => isUnderstood(state, moduleId, l.id)).length;
+}
+
+export function firstPending(state: UnderstoodState, moduleId: string, lessons: LessonRef[]): LessonRef | null {
+  return lessons.find((l) => !isUnderstood(state, moduleId, l.id)) ?? null;
+}
+
+/** What a module asks of the learner: its lessons, understood, and its lab, verified. */
+export type Track = { moduleId: string; labId: string; checkCount: number; lessons: LessonRef[] };
+
+/** Comprehension and practice weigh the same, whatever their sizes. */
+export function trackFraction(t: Track, understood: UnderstoodState, progress: ProgressState): number {
+  const parts: number[] = [];
+  if (t.lessons.length) parts.push(understoodCount(understood, t.moduleId, t.lessons) / t.lessons.length);
+  if (t.checkCount) parts.push(doneCount(progress[t.labId], t.checkCount) / t.checkCount);
+  return parts.length ? parts.reduce((a, b) => a + b, 0) / parts.length : 0;
+}
+
+/**
+ * Where to resume: the first module with pending work, pointing at its first
+ * lesson not yet understood, or at the lab once every lesson is.
+ */
+export function nextStep<T extends Track>(
+  tracks: T[],
+  understood: UnderstoodState,
+  progress: ProgressState,
+): { track: T; lesson: LessonRef | null } | null {
+  for (const t of tracks) {
+    const lesson = firstPending(understood, t.moduleId, t.lessons);
+    if (lesson || doneCount(progress[t.labId], t.checkCount) < t.checkCount) return { track: t, lesson };
+  }
+  return null;
 }

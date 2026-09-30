@@ -14,6 +14,8 @@ import { MiniConstellation } from "@/components/sky/MiniConstellation";
 import { signatureFor, subnetFor } from "@/lib/names";
 import { buildSky } from "@/lib/sky";
 import { checkpointFor } from "@/lib/checkpoints";
+import { ModuleProgress } from "@/components/lab/Lessons";
+import { countedLessons } from "@/lib/lessons";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -37,6 +39,7 @@ export default async function ModulePage({ params }: Params) {
   const next = all[idx + 1];
   const t = m.topology;
   const checkpoint = checkpointFor(m.meta.id);
+  const lessons = countedLessons(m.theory.lessons);
   const realNodes = t.nodes.filter((n) => !n.container && !n.implicit).length;
   const hue = { ["--h" as string]: `var(--hue-${(idx % 6) + 1})` } as React.CSSProperties;
 
@@ -63,6 +66,7 @@ export default async function ModulePage({ params }: Params) {
             <span className="text-ink">Objetivo:</span> {m.lab.objective}
           </p>
           <p className="mt-xs label-mono">Runtime: {m.meta.labRuntime}</p>
+          <ModuleProgress moduleId={m.meta.id} labId={m.lab.id} checkCount={m.lab.dod.checkCount} lessons={lessons} />
         </div>
         <div className="grid gap-md lg:justify-items-end">
           <MiniConstellation sky={buildSky(all)} moduleId={m.meta.id} />
@@ -88,17 +92,21 @@ export default async function ModulePage({ params }: Params) {
       </p>
 
       <LabWorkbench
+        moduleId={m.meta.id}
         labId={m.lab.id}
         checkCount={m.lab.dod.checkCount}
+        lessons={lessons}
         meta={{
-          fundamentos: `${m.meta.books.length} fuente${m.meta.books.length > 1 ? "s" : ""} · ${m.gotchas.length} trampas`,
           topologia: `${realNodes} nodos · ${t.flows.length} flujos`,
           terminal: `setup + ${m.lab.walkthrough.length} pasos`,
         }}
         panels={{
           fundamentos: (
             <TheoryPanel
+              moduleId={m.meta.id}
               markdown={m.theory.markdown}
+              intro={m.theory.intro}
+              lessons={m.theory.lessons}
               trace={m.theory.trace}
               books={m.meta.books}
               gotchas={m.gotchas}

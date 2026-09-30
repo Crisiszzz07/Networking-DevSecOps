@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { addAsterism, clearAsterisms, removeAsterism, renameAsterism, useAsterisms, type Asterism } from "@/lib/atlas";
 import { signatureFor, subnetFor } from "@/lib/names";
-import { doneCount, markSeen, useProgress, useSeen } from "@/lib/progress";
+import { lessonAnchor } from "@/lib/lessons";
+import { doneCount, firstPending, markSeen, nextStep, trackFraction, understoodCount, useProgress, useSeen, useUnderstood } from "@/lib/progress";
 import type { Sky, SkyConcept, SkyModule, SkyPoint } from "@/lib/sky";
 import { CelestialSphere } from "./CelestialSphere";
 
@@ -62,6 +63,7 @@ const seed = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) %
 export function Constellation({ sky }: { sky: Sky }) {
   const progress = useProgress();
   const seen = useSeen();
+  const understood = useUnderstood();
   const [mode, setMode] = useState<Mode>("wide");
   const [focus, setFocus] = useState<string | null>(null);
   const [conceptId, setConceptId] = useState<string | null>(null);
@@ -163,8 +165,12 @@ export function Constellation({ sky }: { sky: Sky }) {
   const mod = focus ? sky.modules.find((m) => m.id === focus)! : null;
   const concept = conceptId ? sky.concepts.find((c) => c.id === conceptId)! : null;
   const done = (m: SkyModule) => doneCount(progress[m.labId], m.checkCount);
-  const frac = (m: SkyModule) => (m.checkCount ? done(m) / m.checkCount : 0);
-  const next = sky.modules.find((m) => done(m) < m.checkCount) ?? null;
+  const track = (m: SkyModule) => ({ ...m, moduleId: m.id });
+  const read = (m: SkyModule) => understoodCount(understood, m.id, m.lessons);
+  const frac = (m: SkyModule) => trackFraction(track(m), understood, progress);
+  const next = nextStep(sky.modules.map(track), understood, progress)?.track ?? null;
+  const lessonsRead = sky.modules.reduce((a, m) => a + read(m), 0);
+  const lessonsTotal = sky.modules.reduce((a, m) => a + m.lessons.length, 0);
   const labsDone = sky.modules.filter((m) => done(m) === m.checkCount).length;
   const litTotal = seen.filter((s) => byId.has(s)).length;
 
@@ -334,6 +340,13 @@ export function Constellation({ sky }: { sky: Sky }) {
           <dd>
             {litTotal}
             <span>/{sky.concepts.length}</span>
+          </dd>
+        </div>
+        <div>
+          <dt>Lecciones entendidas</dt>
+          <dd>
+            {lessonsRead}
+            <span>/{lessonsTotal}</span>
           </dd>
         </div>
         <div>
@@ -706,7 +719,7 @@ export function Constellation({ sky }: { sky: Sky }) {
                     role="button"
                     tabIndex={0}
                     data-picked={draft.stars.includes(m.id)}
-                    aria-label={trace ? `Enlazar el módulo ${m.num} a tu ruta` : `Módulo ${m.num}: ${m.title}. ${done(m)} de ${m.checkCount} checks.`}
+                    aria-label={trace ? `Enlazar el módulo ${m.num} a tu ruta` : `Módulo ${m.num}: ${m.title}. ${read(m)} de ${m.lessons.length} lecciones, ${done(m)} de ${m.checkCount} checks.`}
                     onMouseEnter={() => setHoverModule(m.id)}
                     onMouseLeave={() => setHoverModule(null)}
                     onFocus={() => setHoverModule(m.id)}
@@ -880,19 +893,39 @@ export function Constellation({ sky }: { sky: Sky }) {
             </p>
             <div>
               <div className="flex justify-between label-mono">
+                <span>Comprensión</span>
+                <span className="tabular-nums">
+                  {read(mod)}/{mod.lessons.length} lecciones
+                </span>
+              </div>
+              <div className="meter mt-2xs">
+                <span style={{ transform: `scaleX(${mod.lessons.length ? read(mod) / mod.lessons.length : 0})` }} />
+              </div>
+            </div>
+            <div>
+              <div className="flex justify-between label-mono">
                 <span>Definición de Terminado</span>
                 <span className="tabular-nums">
                   {done(mod)}/{mod.checkCount}
                 </span>
               </div>
-              <div className="meter mt-2xs">
-                <span style={{ transform: `scaleX(${frac(mod)})` }} />
+              <div className="meter meter-allow mt-2xs">
+                <span style={{ transform: `scaleX(${mod.checkCount ? done(mod) / mod.checkCount : 0})` }} />
               </div>
             </div>
-            <Link href={`/modules/${mod.slug}/`} className="btn btn-primary btn-lg justify-center">
-              Abrir laboratorio
-              <ArrowRight size={16} aria-hidden />
-            </Link>
+            {(() => {
+              const pending = firstPending(understood, mod.id, mod.lessons);
+              const started = read(mod) > 0;
+              return (
+                <Link
+                  href={`/modules/${mod.slug}/${pending && started ? "#" + lessonAnchor(pending.id) : ""}`}
+                  className="btn btn-primary btn-lg justify-center"
+                >
+                  {pending && started ? `Retomar lección ${mod.lessons.indexOf(pending) + 1}` : "Abrir laboratorio"}
+                  <ArrowRight size={16} aria-hidden />
+                </Link>
+              );
+            })()}
 
             <section>
               <h3 className="panel-h">Hosts de esta subred</h3>
@@ -1012,7 +1045,7 @@ export function Constellation({ sky }: { sky: Sky }) {
             )}
             <ul className="grid gap-xs text-sm text-neutral">
               <li className="flex items-center gap-sm">
-                <span className="legend-dot legend-module" aria-hidden /> Módulo = subred; el arco orquídea es tu avance en el DoD.
+                <span className="legend-dot legend-module" aria-hidden /> Módulo = subred; el arco orquídea es tu avance: mitad lecciones entendidas, mitad DoD.
               </li>
               <li className="flex items-center gap-sm">
                 <span className="legend-dot legend-concept" aria-hidden /> Concepto (host) sin explorar: luz tenue.

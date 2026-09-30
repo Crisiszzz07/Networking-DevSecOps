@@ -1,5 +1,6 @@
 import { conceptsIn, countIn, GLOSSARY } from "./glossary";
-import type { LearningModule } from "./types";
+import { countedLessons } from "./lessons";
+import type { LearningModule, LessonRef } from "./types";
 
 // The roadmap as a night sky. Each module is a bright star; every glossary
 // concept that the module's theory actually discusses orbits it. A concept
@@ -31,6 +32,7 @@ export type SkyModule = {
   objective: string;
   runtime: string;
   checkCount: number;
+  lessons: LessonRef[];
   dependsOn: string[];
   books: { abbr: string | null; title: string }[];
   home: string[];
@@ -172,6 +174,7 @@ export function buildSky(mods: LearningModule[]): Sky {
       objective: m.lab.objective,
       runtime: m.meta.labRuntime,
       checkCount: m.lab.dod.checkCount,
+      lessons: countedLessons(m.theory.lessons),
       dependsOn: m.meta.dependsOn,
       books: m.meta.books.map((b) => ({ abbr: b.abbr, title: b.title })),
       home: own.map((g) => g.id),

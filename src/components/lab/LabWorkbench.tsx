@@ -2,7 +2,8 @@
 
 import { BookOpenText, ClipboardCheck, Network, SquareTerminal, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { doneCount, useProgress } from "@/lib/progress";
+import { doneCount, understoodCount, useProgress, useUnderstood } from "@/lib/progress";
+import type { LessonRef } from "@/lib/types";
 
 export type QuadrantId = "fundamentos" | "topologia" | "terminal" | "dod";
 
@@ -16,26 +17,45 @@ const QUADS: { id: QuadrantId; title: string; Icon: LucideIcon }[] = [
 /**
  * Four-quadrant switcher. All panels stay in the DOM (pre-rendered, searchable);
  * the hash is updated with replaceState so switching never scroll-jumps.
+ * A hash naming a quadrant, or anything inside one (a lesson), opens that quadrant.
  */
 export function LabWorkbench({
+  moduleId,
   labId,
   checkCount,
+  lessons,
   meta,
   panels,
 }: {
+  moduleId: string;
   labId: string;
   checkCount: number;
-  meta: Record<Exclude<QuadrantId, "dod">, string>;
+  lessons: LessonRef[];
+  meta: Record<"topologia" | "terminal", string>;
   panels: Record<QuadrantId, ReactNode>;
 }) {
   const [active, setActive] = useState<QuadrantId>("fundamentos");
   const tabs = useRef<Record<string, HTMLButtonElement | null>>({});
   const progress = useProgress();
   const done = doneCount(progress[labId], checkCount);
+  const read = understoodCount(useUnderstood(), moduleId, lessons);
 
   useEffect(() => {
-    const fromHash = window.location.hash.slice(1) as QuadrantId;
-    if (QUADS.some((q) => q.id === fromHash)) setActive(fromHash);
+    function follow() {
+      const id = decodeURIComponent(window.location.hash.slice(1));
+      if (!id) return;
+      if (QUADS.some((q) => q.id === id)) return setActive(id as QuadrantId);
+      const target = document.getElementById(id);
+      const panel = target?.closest<HTMLElement>("[role=tabpanel]");
+      const quad = panel?.id.replace(/^panel-/, "") as QuadrantId | undefined;
+      if (!target || !quad || !QUADS.some((q) => q.id === quad)) return;
+      setActive(quad);
+      // The panel was hidden: scroll once it is laid out.
+      requestAnimationFrame(() => target.scrollIntoView({ block: "start" }));
+    }
+    follow();
+    window.addEventListener("hashchange", follow);
+    return () => window.removeEventListener("hashchange", follow);
   }, []);
 
   function select(id: QuadrantId, focus = false) {
@@ -55,7 +75,11 @@ export function LabWorkbench({
     }
   }
 
-  const status: Record<QuadrantId, string> = { ...meta, dod: `${done}/${checkCount} checks` };
+  const status: Record<QuadrantId, string> = {
+    ...meta,
+    fundamentos: `${read}/${lessons.length} lecciones`,
+    dod: `${done}/${checkCount} checks`,
+  };
 
   return (
     <div>

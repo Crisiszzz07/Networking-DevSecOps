@@ -9,10 +9,11 @@ import { unified } from "unified";
 import { z } from "zod";
 import { detectCommands, detectExpectation } from "./commands";
 import { parseDod } from "./dod";
+import { countedLessons, lessonKind, lessonSlug } from "./lessons";
 import { detectHeaders, tracePacket } from "./packet";
 import { BlueprintSchema, FrontmatterSchema, type Frontmatter } from "./schema";
 import { buildTopology } from "./topology";
-import type { BookRef, CodeBlock, Gotcha, Lab, LearningModule, ModuleSummary, WalkthroughStep } from "./types";
+import type { BookRef, CodeBlock, Gotcha, Lab, LearningModule, Lesson, ModuleSummary, WalkthroughStep } from "./types";
 
 export const MODULES_DIR = path.join(process.cwd(), "content", "modules");
 
@@ -163,6 +164,38 @@ function parseLab(file: string, section: Section): Lab {
   };
 }
 
+// Technical Spanish reads slower than prose, and every figure or table is
+// studied rather than read: it adds a minute of its own.
+const WORDS_PER_MINUTE = 160;
+
+/** Splits the theory at its `##` headings; each section becomes a lesson. */
+function lessonsFrom(file: string, body: string, nodes: RootContent[]): { intro: string; lessons: Lesson[] } {
+  const groups: RootContent[][] = [[]];
+  for (const node of nodes) {
+    if (node.type === "heading" && node.depth === 2) groups.push([node]);
+    else groups[groups.length - 1]!.push(node);
+  }
+  const [introNodes, ...sections] = groups;
+  const lessons = sections.map((group): Lesson => {
+    const title = toString(group[0]!).trim();
+    const words = toString({ type: "root", children: group } as Root).split(/\s+/).filter(Boolean).length;
+    const visuals = group.filter((n) => n.type === "code" || n.type === "table").length;
+    return {
+      id: lessonSlug(title),
+      title,
+      kind: lessonKind(title),
+      markdown: sliceMarkdown(body, group),
+      minutes: Math.ceil(words / WORDS_PER_MINUTE) + visuals,
+    };
+  });
+  const ids = new Set<string>();
+  for (const l of lessons) {
+    if (ids.has(l.id)) throw new ContentError(file, `dos lecciones comparten el título «${l.title}»`);
+    ids.add(l.id);
+  }
+  return { intro: sliceMarkdown(body, introNodes!), lessons };
+}
+
 function booksFrom(fm: Frontmatter, trace: string | null): BookRef[] {
   return fm.primary_books.map((b) => {
     let abbr: string | null = null;
@@ -225,6 +258,8 @@ export function parseModule(file: string, raw: string): LearningModule {
   for (const b of books) if (!b.abbr) warnings.push(`No encontré la abreviatura de «${b.title}» en la nota de trazabilidad.`);
 
   const theoryMarkdown = sliceMarkdown(body, theoryNodes);
+  const { intro, lessons } = lessonsFrom(file, body, theoryNodes);
+  if (!lessons.some((l) => l.kind === "leccion")) warnings.push("La teoría no tiene ninguna lección (sección ##) que cuente para la comprensión.");
   return {
     meta: {
       id: fm.data.id,
@@ -237,7 +272,7 @@ export function parseModule(file: string, raw: string): LearningModule {
       books,
       dependsOn: fm.data.depends_on ?? [],
     },
-    theory: { markdown: theoryMarkdown, trace },
+    theory: { markdown: theoryMarkdown, trace, intro, lessons },
     blueprintSource: bpSource,
     blueprintYaml: bpCode.value,
     lab,
@@ -288,6 +323,7 @@ export function summarise(m: LearningModule): ModuleSummary {
     labId: m.lab.id,
     objective: m.lab.objective,
     checkCount: m.lab.dod.checkCount,
+    lessons: countedLessons(m.theory.lessons),
     nodeCount: m.topology.nodes.filter((n) => !n.container && !n.implicit).length,
     flowCount: m.topology.flows.length,
   };
